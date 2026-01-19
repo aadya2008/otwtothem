@@ -1,62 +1,183 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Private Audio & Chat</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Call or Chat</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f4f9; }
-        #chat-box { width: 90%; max-width: 400px; height: 200px; border: 1px solid #ccc; margin: 20px auto; overflow-y: scroll; background: white; padding: 10px; text-align: left; border-radius: 8px; }
-        input { padding: 12px; width: 80%; max-width: 300px; margin: 10px; border: 1px solid #ddd; border-radius: 5px; }
-        button { padding: 12px 24px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; font-weight: bold; }
-        .audio-btn { background: #28a745; margin-top: 10px; }
-        .msg-btn { background: #17a2b8; }
+        :root {
+            --bg-color: #f7f3ed;
+            --card-bg: #ffffff;
+            --text-main: #2d2621;
+            --text-sub: #8e8781;
+            --btn-active: #e8e3dc;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: var(--card-bg);
+            width: 90%;
+            max-width: 380px;
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        h1 { font-size: 28px; margin: 0; font-weight: 600; }
+
+        .top-buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid #eee;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover { background: var(--btn-active); }
+
+        .contacts-label {
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .contact-card {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid #f0f0f0;
+            border-radius: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .contact-card:active { transform: scale(0.98); background: #fafafa; }
+
+        .avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #ddd;
+            margin-right: 15px;
+            overflow: hidden;
+        }
+
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+        .contact-info b { display: block; font-size: 16px; }
+        .contact-info span { color: var(--text-sub); font-size: 13px; }
+
+        #setup-screen input {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+            box-sizing: border-box;
+        }
+
+        #call-screen { display: none; }
     </style>
 </head>
 <body>
-    <h1>Audio & Private Chat</h1>
-    
-    <div id="setup">
-        <p>Step 1: Create your permanent name</p>
-        <input type="text" id="my-name" placeholder="Enter your name (e.g. Aadya)">
-        <button onclick="startApp()">Set My Permanent ID</button>
+
+    <div id="setup-screen" class="container">
+        <h1>Welcome</h1>
+        <p style="color: var(--text-sub)">Choose your fixed username.</p>
+        <input type="text" id="my-name" placeholder="Your Name">
+        <button class="action-btn" style="background: #2d2621; color: white;" onclick="startApp()">Enter App</button>
     </div>
 
-    <div id="main-app" style="display:none;">
-        <p>Your ID is: <b id="display-id" style="color: blue;"></b></p>
-        <hr>
-        <p>Step 2: Enter your friend's name to connect</p>
-        <input type="text" id="remote-id" placeholder="Friend's Name">
-        <br>
-        <button class="audio-btn" onclick="makeCall()">📞 Start Audio Call</button>
+    <div id="call-screen" class="container">
+        <div class="header">
+            <h1>Call or Chat</h1>
+            <div style="font-size: 20px;" onclick="location.reload()">↺</div>
+        </div>
+
+        <div class="top-buttons">
+            <button class="action-btn" onclick="makeCall()">📞 Call</button>
+            <button class="action-btn" onclick="alert('Chat active! Tap a contact to start.')">💬 Chat</button>
+        </div>
+
+        <span class="contacts-label">Tap to Call Contact</span>
         
-        <div id="chat-box"></div>
-        <input type="text" id="chat-input" placeholder="Type a message...">
-        <button class="msg-btn" onclick="sendMessage()">💬 Send Message</button>
+        <div class="contact-card" onclick="autoCall('theresa')">
+            <div class="avatar"><img src="https://i.pravatar.cc/150?u=theresa" alt=""></div>
+            <div class="contact-info">
+                <b>Theresa Webb</b>
+                <span>Tap to call</span>
+            </div>
+        </div>
+
+        <div class="contact-card" onclick="autoCall('marvin')">
+            <div class="avatar"><img src="https://i.pravatar.cc/150?u=marvin" alt=""></div>
+            <div class="contact-info">
+                <b>Marvin McKinney</b>
+                <span>Tap to call</span>
+            </div>
+        </div>
+
+        <p style="font-size: 12px; color: var(--text-sub); margin-top: 20px;">
+            Your ID: <span id="display-id" style="font-weight: bold;"></span>
+        </p>
     </div>
 
     <script>
         let peer;
-        let conn;
 
+        // Auto-fill name if they used it before
+        window.onload = () => {
+            const savedName = localStorage.getItem('chatAppName');
+            if (savedName) document.getElementById('my-name').value = savedName;
+        };
+        
         function startApp() {
-            const myId = document.getElementById('my-name').value.trim().toLowerCase();
-            if (!myId) return alert("Please enter a name");
+            const name = document.getElementById('my-name').value.trim().toLowerCase();
+            if (!name) return alert("Please enter a name");
             
-            peer = new Peer(myId); 
+            localStorage.setItem('chatAppName', name); // Remember the name
+            peer = new Peer(name);
 
             peer.on('open', (id) => {
                 document.getElementById('display-id').innerText = id;
-                document.getElementById('setup').style.display = 'none';
-                document.getElementById('main-app').style.display = 'block';
-            });
-
-            peer.on('connection', (connection) => {
-                conn = connection;
-                setupChat();
+                document.getElementById('setup-screen').style.display = 'none';
+                document.getElementById('call-screen').style.display = 'block';
             });
 
             peer.on('call', (call) => {
-                if(confirm("Incoming audio call. Accept?")) {
+                if(confirm("Incoming Audio Call. Accept?")) {
                     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
                         call.answer(stream);
                         call.on('stream', (remoteStream) => {
@@ -69,46 +190,22 @@
             });
         }
 
-        function sendMessage() {
-            const msg = document.getElementById('chat-input').value;
-            const targetId = document.getElementById('remote-id').value.trim().toLowerCase();
-            
-            if (!conn || conn.peer !== targetId) {
-                conn = peer.connect(targetId);
-                setupChat();
-            }
-            
-            setTimeout(() => {
-                if (conn.open) {
-                    conn.send(msg);
-                    addMessage("Me: " + msg);
-                    document.getElementById('chat-input').value = "";
-                }
-            }, 800);
-        }
-
-        function setupChat() {
-            conn.on('data', (data) => {
-                addMessage("Friend: " + data);
-            });
-        }
-
-        function addMessage(text) {
-            const box = document.getElementById('chat-box');
-            box.innerHTML += `<div>${text}</div>`;
-            box.scrollTop = box.scrollHeight;
-        }
-
-        function makeCall() {
-            const id = document.getElementById('remote-id').value.trim().toLowerCase();
+        function autoCall(friendName) {
+            console.log("Calling: " + friendName);
             navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-                const call = peer.call(id, stream);
+                const call = peer.call(friendName, stream);
+                alert("Calling " + friendName + "...");
                 call.on('stream', (remoteStream) => {
                     const audio = new Audio();
                     audio.srcObject = remoteStream;
                     audio.play();
                 });
             });
+        }
+
+        function makeCall() {
+            const manualName = prompt("Enter Friend's ID to call:");
+            if (manualName) autoCall(manualName.toLowerCase());
         }
     </script>
 </body>
