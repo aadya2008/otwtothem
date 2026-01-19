@@ -1,53 +1,112 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>My Private Audio Call</title>
+    <title>Private Audio & Chat</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 50px; background: #f4f4f9; }
-        button { padding: 15px 30px; font-size: 18px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 5px; }
-        #status { margin-top: 20px; color: #555; }
+        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f4f9; }
+        #chat-box { width: 90%; max-width: 400px; height: 200px; border: 1px solid #ccc; margin: 20px auto; overflow-y: scroll; background: white; padding: 10px; text-align: left; border-radius: 8px; }
+        input { padding: 12px; width: 80%; max-width: 300px; margin: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 12px 24px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; font-weight: bold; }
+        .audio-btn { background: #28a745; margin-top: 10px; }
+        .msg-btn { background: #17a2b8; }
     </style>
 </head>
 <body>
-    <h1>Direct Audio Call</h1>
-    <p>Your ID: <b id="my-id">...</b></p>
-    <input type="text" id="remote-id" placeholder="Paste Friend's ID here">
-    <button onclick="makeCall()">Start Audio Call</button>
-    <div id="status">Waiting for connection...</div>
+    <h1>Audio & Private Chat</h1>
+    
+    <div id="setup">
+        <p>Step 1: Create your permanent name</p>
+        <input type="text" id="my-name" placeholder="Enter your name (e.g. Aadya)">
+        <button onclick="startApp()">Set My Permanent ID</button>
+    </div>
+
+    <div id="main-app" style="display:none;">
+        <p>Your ID is: <b id="display-id" style="color: blue;"></b></p>
+        <hr>
+        <p>Step 2: Enter your friend's name to connect</p>
+        <input type="text" id="remote-id" placeholder="Friend's Name">
+        <br>
+        <button class="audio-btn" onclick="makeCall()">📞 Start Audio Call</button>
+        
+        <div id="chat-box"></div>
+        <input type="text" id="chat-input" placeholder="Type a message...">
+        <button class="msg-btn" onclick="sendMessage()">💬 Send Message</button>
+    </div>
 
     <script>
-        const peer = new Peer(); // Generates a random ID for you
-        let localStream;
+        let peer;
+        let conn;
 
-        peer.on('open', (id) => {
-            document.getElementById('my-id').innerText = id;
-            document.getElementById('status').innerText = "Ready! Share your ID with your friend.";
-        });
+        function startApp() {
+            const myId = document.getElementById('my-name').value.trim().toLowerCase();
+            if (!myId) return alert("Please enter a name");
+            
+            peer = new Peer(myId); 
 
-        // Receiving a call
-        peer.on('call', (call) => {
-            navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-                call.answer(stream); // Answer the call with your audio
-                call.on('stream', (remoteStream) => {
-                    const audio = new Audio();
-                    audio.srcObject = remoteStream;
-                    audio.play();
-                    document.getElementById('status').innerText = "Call in progress...";
-                });
+            peer.on('open', (id) => {
+                document.getElementById('display-id').innerText = id;
+                document.getElementById('setup').style.display = 'none';
+                document.getElementById('main-app').style.display = 'block';
             });
-        });
 
-        // Making a call
+            peer.on('connection', (connection) => {
+                conn = connection;
+                setupChat();
+            });
+
+            peer.on('call', (call) => {
+                if(confirm("Incoming audio call. Accept?")) {
+                    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+                        call.answer(stream);
+                        call.on('stream', (remoteStream) => {
+                            const audio = new Audio();
+                            audio.srcObject = remoteStream;
+                            audio.play();
+                        });
+                    });
+                }
+            });
+        }
+
+        function sendMessage() {
+            const msg = document.getElementById('chat-input').value;
+            const targetId = document.getElementById('remote-id').value.trim().toLowerCase();
+            
+            if (!conn || conn.peer !== targetId) {
+                conn = peer.connect(targetId);
+                setupChat();
+            }
+            
+            setTimeout(() => {
+                if (conn.open) {
+                    conn.send(msg);
+                    addMessage("Me: " + msg);
+                    document.getElementById('chat-input').value = "";
+                }
+            }, 800);
+        }
+
+        function setupChat() {
+            conn.on('data', (data) => {
+                addMessage("Friend: " + data);
+            });
+        }
+
+        function addMessage(text) {
+            const box = document.getElementById('chat-box');
+            box.innerHTML += `<div>${text}</div>`;
+            box.scrollTop = box.scrollHeight;
+        }
+
         function makeCall() {
-            const id = document.getElementById('remote-id').value;
+            const id = document.getElementById('remote-id').value.trim().toLowerCase();
             navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
                 const call = peer.call(id, stream);
                 call.on('stream', (remoteStream) => {
                     const audio = new Audio();
                     audio.srcObject = remoteStream;
                     audio.play();
-                    document.getElementById('status').innerText = "Calling...";
                 });
             });
         }
