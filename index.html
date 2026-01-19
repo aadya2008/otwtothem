@@ -3,210 +3,185 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Call or Chat</title>
+    <title>Call, Chat & Voice</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        :root {
-            --bg-color: #f7f3ed;
-            --card-bg: #ffffff;
-            --text-main: #2d2621;
-            --text-sub: #8e8781;
-            --btn-active: #e8e3dc;
-        }
-
-        body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-        }
-
-        .container {
-            background: var(--card-bg);
-            width: 90%;
-            max-width: 380px;
-            padding: 30px;
-            border-radius: 24px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-        }
-
-        h1 { font-size: 28px; margin: 0; font-weight: 600; }
-
-        .top-buttons {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        .action-btn {
-            flex: 1;
-            padding: 15px;
-            border-radius: 12px;
-            border: 1px solid #eee;
-            background: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-
-        .action-btn:hover { background: var(--btn-active); }
-
-        .contacts-label {
-            font-weight: 600;
-            margin-bottom: 15px;
-            display: block;
-        }
-
-        .contact-card {
-            display: flex;
-            align-items: center;
-            padding: 12px;
-            border: 1px solid #f0f0f0;
-            border-radius: 16px;
-            margin-bottom: 12px;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-
-        .contact-card:active { transform: scale(0.98); background: #fafafa; }
-
-        .avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: #ddd;
-            margin-right: 15px;
-            overflow: hidden;
-        }
-
-        .avatar img { width: 100%; height: 100%; object-fit: cover; }
-
-        .contact-info b { display: block; font-size: 16px; }
-        .contact-info span { color: var(--text-sub); font-size: 13px; }
-
-        #setup-screen input {
-            width: 100%;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-radius: 12px;
-            border: 1px solid #ddd;
-            box-sizing: border-box;
-        }
-
-        #call-screen { display: none; }
+        :root { --bg-color: #f7f3ed; --card-bg: #ffffff; --text-main: #2d2621; --text-sub: #8e8781; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: var(--card-bg); width: 95%; max-width: 400px; padding: 20px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); min-height: 550px; display: flex; flex-direction: column; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .contact-card { display: flex; align-items: center; justify-content: space-between; padding: 12px; border: 1px solid #f0f0f0; border-radius: 16px; margin-bottom: 10px; cursor: pointer; }
+        .chat-area { flex-grow: 1; overflow-y: auto; background: #fafafa; border-radius: 15px; padding: 10px; margin-bottom: 10px; border: 1px solid #eee; display: none; height: 300px; }
+        .msg { margin-bottom: 8px; padding: 10px; border-radius: 12px; max-width: 80%; font-size: 14px; word-wrap: break-word; }
+        .msg.me { background: #2d2621; color: white; align-self: flex-end; margin-left: auto; }
+        .msg.them { background: #e8e3dc; color: #2d2621; align-self: flex-start; }
+        .input-row { display: none; gap: 5px; flex-wrap: wrap; }
+        input { flex-grow: 1; padding: 12px; border-radius: 10px; border: 1px solid #ddd; }
+        .btn { padding: 10px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; }
+        .btn-call { background: #28a745; color: white; }
+        .btn-send { background: #2d2621; color: white; }
+        .btn-voice { background: #ff4d4d; color: white; }
+        audio { width: 100%; margin-top: 5px; }
     </style>
 </head>
 <body>
 
     <div id="setup-screen" class="container">
-        <h1>Welcome</h1>
-        <p style="color: var(--text-sub)">Choose your fixed username.</p>
-        <input type="text" id="my-name" placeholder="Your Name">
-        <button class="action-btn" style="background: #2d2621; color: white;" onclick="startApp()">Enter App</button>
+        <h1>Private App</h1>
+        <p>Enter your unique ID to start.</p>
+        <input type="text" id="my-name" placeholder="Your ID (e.g. aadya)">
+        <button class="btn btn-send" style="width:100%" onclick="startApp()">Open App</button>
     </div>
 
-    <div id="call-screen" class="container">
+    <div id="main-screen" class="container" style="display:none;">
         <div class="header">
-            <h1>Call or Chat</h1>
-            <div style="font-size: 20px;" onclick="location.reload()">↺</div>
+            <h1 id="view-title" style="font-size: 20px;">Contacts</h1>
+            <button id="add-btn" class="btn" style="background:#eee" onclick="addFriend()">+</button>
+            <button id="back-btn" class="btn" style="display:none" onclick="location.reload()">Back</button>
         </div>
 
-        <div class="top-buttons">
-            <button class="action-btn" onclick="makeCall()">📞 Call</button>
-            <button class="action-btn" onclick="alert('Chat active! Tap a contact to start.')">💬 Chat</button>
-        </div>
-
-        <span class="contacts-label">Tap to Call Contact</span>
+        <div id="contact-list"></div>
+        <div id="chat-window" class="chat-area" style="display: flex; flex-direction: column;"></div>
         
-        <div class="contact-card" onclick="autoCall('friend-id')">
-    <div class="avatar"><img src="https://i.pravatar.cc/150?u=1" alt=""></div>
-    <div class="contact-info">
-        <b>Friend's Real Name</b>
-        <span>Tap to call</span>
-    </div>
-</div>
-
-<div class="contact-card" onclick="autoCall('your-id')">
-    <div class="avatar"><img src="https://i.pravatar.cc/150?u=2" alt=""></div>
-    <div class="contact-info">
-        <b>Your Real Name</b>
-        <span>Tap to call</span>
-    </div>
-</div>
-
-
-        <p style="font-size: 12px; color: var(--text-sub); margin-top: 20px;">
-            Your ID: <span id="display-id" style="font-weight: bold;"></span>
-        </p>
+        <div id="input-area" class="input-row">
+            <input type="text" id="chat-msg" placeholder="Message...">
+            <button class="btn btn-send" onclick="sendChat()">Send</button>
+            <button class="btn btn-voice" id="voice-btn" onclick="toggleRecording()">🎤</button>
+            <button class="btn btn-call" onclick="makeCall()">📞 Call</button>
+        </div>
     </div>
 
     <script>
-        let peer;
+        let peer, conn, activeFriendId, mediaRecorder, audioChunks = [];
+        let friends = JSON.parse(localStorage.getItem('myFriends')) || [];
+        let chats = JSON.parse(localStorage.getItem('myChatHistory')) || {};
 
-        // Auto-fill name if they used it before
         window.onload = () => {
-            const savedName = localStorage.getItem('chatAppName');
-            if (savedName) document.getElementById('my-name').value = savedName;
+            const saved = localStorage.getItem('chatAppName');
+            if (saved) { document.getElementById('my-name').value = saved; startApp(); }
         };
-        
+
         function startApp() {
             const name = document.getElementById('my-name').value.trim().toLowerCase();
-            if (!name) return alert("Please enter a name");
-            
-            localStorage.setItem('chatAppName', name); // Remember the name
+            if (!name) return;
+            localStorage.setItem('chatAppName', name);
             peer = new Peer(name);
-
-            peer.on('open', (id) => {
-                document.getElementById('display-id').innerText = id;
+            peer.on('open', () => {
                 document.getElementById('setup-screen').style.display = 'none';
-                document.getElementById('call-screen').style.display = 'block';
+                document.getElementById('main-screen').style.display = 'flex';
+                renderFriends();
+            });
+
+            peer.on('connection', (c) => {
+                conn = c;
+                conn.on('data', (data) => { saveAndShowMsg(conn.peer, data, 'them'); });
             });
 
             peer.on('call', (call) => {
-                if(confirm("Incoming Audio Call. Accept?")) {
-                    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-                        call.answer(stream);
-                        call.on('stream', (remoteStream) => {
-                            const audio = new Audio();
-                            audio.srcObject = remoteStream;
-                            audio.play();
-                        });
+                if(confirm("Incoming call... Accept?")) {
+                    navigator.mediaDevices.getUserMedia({ audio: true }).then((s) => {
+                        call.answer(s);
+                        call.on('stream', (rs) => { const a = new Audio(); a.srcObject = rs; a.play(); });
                     });
                 }
             });
         }
 
-        function autoCall(friendName) {
-            console.log("Calling: " + friendName);
-            navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-                const call = peer.call(friendName, stream);
-                alert("Calling " + friendName + "...");
-                call.on('stream', (remoteStream) => {
-                    const audio = new Audio();
-                    audio.srcObject = remoteStream;
-                    audio.play();
-                });
+        function renderFriends() {
+            const list = document.getElementById('contact-list');
+            list.innerHTML = '';
+            friends.forEach((f, i) => {
+                list.innerHTML += `<div class="contact-card" onclick="openChat('${f.id}', '${f.name}')"><b>${f.name}</b><button class="btn" onclick="deleteFriend(${i}, event)">🗑️</button></div>`;
             });
         }
 
+        function openChat(id, name) {
+            activeFriendId = id;
+            document.getElementById('contact-list').style.display = 'none';
+            document.getElementById('chat-window').style.display = 'flex';
+            document.getElementById('input-area').style.display = 'flex';
+            document.getElementById('view-title').innerText = name;
+            document.getElementById('add-btn').style.display = 'none';
+            document.getElementById('back-btn').style.display = 'block';
+            if (!conn || conn.peer !== id) conn = peer.connect(id);
+            loadHistory();
+        }
+
+        function sendChat() {
+            const msg = document.getElementById('chat-msg').value;
+            if (!msg) return;
+            if (conn && conn.open) conn.send({type: 'text', content: msg});
+            saveAndShowMsg(activeFriendId, {type: 'text', content: msg}, 'me');
+            document.getElementById('chat-msg').value = '';
+        }
+
+        async function toggleRecording() {
+            const btn = document.getElementById('voice-btn');
+            if (!mediaRecorder || mediaRecorder.state === "inactive") {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(audioChunks, { type: 'audio/ogg; codecs=opus' });
+                    const reader = new FileReader();
+                    reader.readAsDataURL(blob);
+                    reader.onloadend = () => {
+                        const base64data = reader.result;
+                        if (conn && conn.open) conn.send({type: 'voice', content: base64data});
+                        saveAndShowMsg(activeFriendId, {type: 'voice', content: base64data}, 'me');
+                    };
+                };
+                mediaRecorder.start();
+                btn.innerText = "🛑";
+            } else {
+                mediaRecorder.stop();
+                btn.innerText = "🎤";
+            }
+        }
+
+        function saveAndShowMsg(friendId, data, type) {
+            if (!chats[friendId]) chats[friendId] = [];
+            chats[friendId].push({ ...data, type, time: Date.now() });
+            localStorage.setItem('myChatHistory', JSON.stringify(chats));
+            if (activeFriendId === friendId) loadHistory();
+        }
+
+        function loadHistory() {
+            const win = document.getElementById('chat-window');
+            win.innerHTML = '';
+            (chats[activeFriendId] || []).forEach(m => {
+                if (m.type === 'text' || m.content?.type === 'text' || typeof m.content === 'string') {
+                    let text = typeof m.content === 'object' ? m.content.content : m.content;
+                    win.innerHTML += `<div class="msg ${m.type}">${text}</div>`;
+                } else {
+                    let src = typeof m.content === 'object' ? m.content.content : m.content;
+                    win.innerHTML += `<div class="msg ${m.type}"><audio controls src="${src}"></audio></div>`;
+                }
+            });
+            win.scrollTop = win.scrollHeight;
+        }
+
         function makeCall() {
-            const manualName = prompt("Enter Friend's ID to call:");
-            if (manualName) autoCall(manualName.toLowerCase());
+            navigator.mediaDevices.getUserMedia({ audio: true }).then((s) => {
+                const call = peer.call(activeFriendId, s);
+                call.on('stream', (rs) => { const a = new Audio(); a.srcObject = rs; a.play(); });
+            });
+        }
+
+        function addFriend() {
+            const n = prompt("Display Name:");
+            const i = prompt("Friend's ID:");
+            if (n && i) { friends.push({name: n, id: i.toLowerCase()}); localStorage.setItem('myFriends', JSON.stringify(friends)); renderFriends(); }
+        }
+
+        function deleteFriend(i, e) {
+            e.stopPropagation();
+            if(confirm("Delete contact and chat?")) {
+                friends.splice(i, 1);
+                localStorage.setItem('myFriends', JSON.stringify(friends));
+                renderFriends();
+            }
         }
     </script>
 </body>
