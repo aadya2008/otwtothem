@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Private Audio Call</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; background: #f4f4f9; }
+        button { padding: 15px 30px; font-size: 18px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 5px; }
+        #status { margin-top: 20px; color: #555; }
+    </style>
+</head>
+<body>
+    <h1>Direct Audio Call</h1>
+    <p>Your ID: <b id="my-id">...</b></p>
+    <input type="text" id="remote-id" placeholder="Paste Friend's ID here">
+    <button onclick="makeCall()">Start Audio Call</button>
+    <div id="status">Waiting for connection...</div>
+
+    <script>
+        const peer = new Peer(); // Generates a random ID for you
+        let localStream;
+
+        peer.on('open', (id) => {
+            document.getElementById('my-id').innerText = id;
+            document.getElementById('status').innerText = "Ready! Share your ID with your friend.";
+        });
+
+        // Receiving a call
+        peer.on('call', (call) => {
+            navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+                call.answer(stream); // Answer the call with your audio
+                call.on('stream', (remoteStream) => {
+                    const audio = new Audio();
+                    audio.srcObject = remoteStream;
+                    audio.play();
+                    document.getElementById('status').innerText = "Call in progress...";
+                });
+            });
+        });
+
+        // Making a call
+        function makeCall() {
+            const id = document.getElementById('remote-id').value;
+            navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+                const call = peer.call(id, stream);
+                call.on('stream', (remoteStream) => {
+                    const audio = new Audio();
+                    audio.srcObject = remoteStream;
+                    audio.play();
+                    document.getElementById('status').innerText = "Calling...";
+                });
+            });
+        }
+    </script>
+</body>
+</html>
