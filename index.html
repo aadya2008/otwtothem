@@ -3,186 +3,206 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Call, Chat & Voice</title>
+    <title>Connect | Private Space</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        :root { --bg-color: #f7f3ed; --card-bg: #ffffff; --text-main: #2d2621; --text-sub: #8e8781; }
-        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { background: var(--card-bg); width: 95%; max-width: 400px; padding: 20px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); min-height: 550px; display: flex; flex-direction: column; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .contact-card { display: flex; align-items: center; justify-content: space-between; padding: 12px; border: 1px solid #f0f0f0; border-radius: 16px; margin-bottom: 10px; cursor: pointer; }
-        .chat-area { flex-grow: 1; overflow-y: auto; background: #fafafa; border-radius: 15px; padding: 10px; margin-bottom: 10px; border: 1px solid #eee; display: none; height: 300px; }
-        .msg { margin-bottom: 8px; padding: 10px; border-radius: 12px; max-width: 80%; font-size: 14px; word-wrap: break-word; }
-        .msg.me { background: #2d2621; color: white; align-self: flex-end; margin-left: auto; }
-        .msg.them { background: #e8e3dc; color: #2d2621; align-self: flex-start; }
-        .input-row { display: none; gap: 5px; flex-wrap: wrap; }
-        input { flex-grow: 1; padding: 12px; border-radius: 10px; border: 1px solid #ddd; }
-        .btn { padding: 10px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; }
-        .btn-call { background: #28a745; color: white; }
-        .btn-send { background: #2d2621; color: white; }
-        .btn-voice { background: #ff4d4d; color: white; }
-        audio { width: 100%; margin-top: 5px; }
+        :root { --bg: #fdfaf5; --accent: #6d7e6e; --dark: #2d2621; --white: #ffffff; --grey: #f9f9f9; --online: #8fbc8f; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); color: var(--dark); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: var(--white); width: 90%; max-width: 380px; padding: 30px; border-radius: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.03); text-align: center; min-height: 500px; display: flex; flex-direction: column; position: relative; }
+        h1 { font-size: 24px; font-weight: 700; margin-bottom: 20px; }
+        input { width: 100%; padding: 15px; margin-top: 5px; border-radius: 15px; border: 1.5px solid #eee; box-sizing: border-box; background: var(--grey); margin-bottom: 10px; }
+        .main-btn { width: 100%; padding: 16px; border-radius: 15px; border: none; background: var(--dark); color: white; font-weight: 600; cursor: pointer; }
+        
+        .contact-card { display: flex; align-items: center; justify-content: space-between; padding: 15px; background: var(--grey); border-radius: 20px; margin-bottom: 10px; position: relative; }
+        .status-dot { width: 10px; height: 10px; background: #ccc; border-radius: 50%; display: inline-block; margin-right: 8px; transition: 0.3s; }
+        .status-dot.online { background: var(--online); box-shadow: 0 0 8px var(--online); }
+        
+        .icon-btns { display: flex; gap: 8px; }
+        .icon-btn { background: white; border: 1px solid #eee; border-radius: 12px; padding: 8px; cursor: pointer; font-size: 16px; }
+        
+        #chat-view { display: none; flex-direction: column; flex-grow: 1; }
+        #msg-history { flex-grow: 1; height: 280px; overflow-y: auto; background: var(--grey); border-radius: 15px; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+        .msg { padding: 10px 14px; border-radius: 15px; max-width: 80%; font-size: 14px; }
+        .msg.me { background: var(--dark); color: white; align-self: flex-end; }
+        .msg.them { background: #e8e3dc; color: var(--dark); align-self: flex-start; }
+
+        #call-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(45, 38, 33, 0.98); color: white; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
+        .ring-btn { width: 70px; height: 70px; border-radius: 50%; border: none; cursor: pointer; margin: 20px; font-size: 24px; }
     </style>
 </head>
 <body>
 
-    <div id="setup-screen" class="container">
-        <h1>Private App</h1>
-        <p>Enter your unique ID to start.</p>
-        <input type="text" id="my-name" placeholder="Your ID (e.g. aadya)">
-        <button class="btn btn-send" style="width:100%" onclick="startApp()">Open App</button>
+    <div id="auth-screen" class="container">
+        <h1>Connect</h1>
+        <input type="text" id="auth-id" placeholder="Username">
+        <input type="password" id="auth-pass" placeholder="Password">
+        <button class="main-btn" onclick="handleAuth()">Login / Sign Up</button>
     </div>
 
-    <div id="main-screen" class="container" style="display:none;">
-        <div class="header">
-            <h1 id="view-title" style="font-size: 20px;">Contacts</h1>
-            <button id="add-btn" class="btn" style="background:#eee" onclick="addFriend()">+</button>
-            <button id="back-btn" class="btn" style="display:none" onclick="location.reload()">Back</button>
+    <div id="app-screen" class="container" style="display:none;">
+        <div id="contact-view">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h1>Space</h1>
+                <button onclick="addFriend()" style="background:none; border:none; font-size:28px; color:var(--accent);">+</button>
+            </div>
+            <div id="contact-list"></div>
         </div>
 
-        <div id="contact-list"></div>
-        <div id="chat-window" class="chat-area" style="display: flex; flex-direction: column;"></div>
-        
-        <div id="input-area" class="input-row">
-            <input type="text" id="chat-msg" placeholder="Message...">
-            <button class="btn btn-send" onclick="sendChat()">Send</button>
-            <button class="btn btn-voice" id="voice-btn" onclick="toggleRecording()">🎤</button>
-            <button class="btn btn-call" onclick="makeCall()">📞 Call</button>
+        <div id="chat-view">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
+                <button onclick="closeChat()" style="background:none; border:none; font-size:20px;">←</button>
+                <b id="chat-with">Name</b>
+            </div>
+            <div id="msg-history"></div>
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="msg-input" placeholder="Aa" style="margin:0;">
+                <button class="icon-btn" onclick="sendText()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="call-overlay">
+        <h2 id="call-status">Call</h2>
+        <div style="display:flex;">
+            <button id="answer-btn" class="ring-btn" style="background:#28a745;" onclick="answerCall()">📞</button>
+            <button class="ring-btn" style="background:#ff4d4d;" onclick="endCall()">✖</button>
         </div>
     </div>
 
     <script>
-        let peer, conn, activeFriendId, mediaRecorder, audioChunks = [];
-        let friends = JSON.parse(localStorage.getItem('myFriends')) || [];
-        let chats = JSON.parse(localStorage.getItem('myChatHistory')) || {};
+        let peer, conn, currentCall, ringtone, activeId;
+        let friends = JSON.parse(localStorage.getItem('f_list') || '[]');
+        let chatLogs = JSON.parse(localStorage.getItem('c_logs') || '{}');
+        const ringSound = "https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3";
 
-        window.onload = () => {
-            const saved = localStorage.getItem('chatAppName');
-            if (saved) { document.getElementById('my-name').value = saved; startApp(); }
-        };
+        function handleAuth() {
+            const id = document.getElementById('auth-id').value.trim().toLowerCase();
+            const pass = document.getElementById('auth-pass').value.trim();
+            const saved = localStorage.getItem('p_' + id);
+            if (!saved) { localStorage.setItem('p_' + id, pass); alert("Created!"); }
+            else if (saved !== pass) return alert("Wrong!");
+            startApp(id);
+        }
 
-        function startApp() {
-            const name = document.getElementById('my-name').value.trim().toLowerCase();
-            if (!name) return;
-            localStorage.setItem('chatAppName', name);
-            peer = new Peer(name);
+        function startApp(id) {
+            peer = new Peer(id);
             peer.on('open', () => {
-                document.getElementById('setup-screen').style.display = 'none';
-                document.getElementById('main-screen').style.display = 'flex';
+                document.getElementById('auth-screen').style.display = 'none';
+                document.getElementById('app-screen').style.display = 'flex';
                 renderFriends();
+                setInterval(checkOnline, 5000); // Check status every 5 seconds
             });
-
-            peer.on('connection', (c) => {
+            peer.on('connection', c => {
                 conn = c;
-                conn.on('data', (data) => { saveAndShowMsg(conn.peer, data, 'them'); });
+                conn.on('data', data => {
+                    if(data === 'ping') { conn.send('pong'); return; }
+                    saveMsg(conn.peer, data, 'them'); 
+                });
             });
+            peer.on('call', call => {
+                currentCall = call;
+                ringtone = new Audio(ringSound); ringtone.play();
+                document.getElementById('call-overlay').style.display = 'flex';
+                document.getElementById('call-status').innerText = "Incoming...";
+            });
+        }
 
-            peer.on('call', (call) => {
-                if(confirm("Incoming call... Accept?")) {
-                    navigator.mediaDevices.getUserMedia({ audio: true }).then((s) => {
-                        call.answer(s);
-                        call.on('stream', (rs) => { const a = new Audio(); a.srcObject = rs; a.play(); });
-                    });
-                }
+        function checkOnline() {
+            friends.forEach(f => {
+                const p = peer.connect(f.id, { metadata: "ping" });
+                p.on('open', () => {
+                    document.getElementById('dot-' + f.id).classList.add('online');
+                    p.close();
+                });
+                p.on('error', () => {
+                    document.getElementById('dot-' + f.id).classList.remove('online');
+                });
             });
         }
 
         function renderFriends() {
             const list = document.getElementById('contact-list');
             list.innerHTML = '';
-            friends.forEach((f, i) => {
-                list.innerHTML += `<div class="contact-card" onclick="openChat('${f.id}', '${f.name}')"><b>${f.name}</b><button class="btn" onclick="deleteFriend(${i}, event)">🗑️</button></div>`;
+            friends.forEach(f => {
+                list.innerHTML += `<div class="contact-card">
+                    <div><span id="dot-${f.id}" class="status-dot"></span><b>${f.name}</b></div>
+                    <div class="icon-btns">
+                        <button class="icon-btn" onclick="openChat('${f.id}','${f.name}')">💬</button>
+                        <button class="icon-btn" onclick="makeCall('${f.id}')">📞</button>
+                    </div>
+                </div>`;
             });
         }
 
         function openChat(id, name) {
-            activeFriendId = id;
-            document.getElementById('contact-list').style.display = 'none';
-            document.getElementById('chat-window').style.display = 'flex';
-            document.getElementById('input-area').style.display = 'flex';
-            document.getElementById('view-title').innerText = name;
-            document.getElementById('add-btn').style.display = 'none';
-            document.getElementById('back-btn').style.display = 'block';
-            if (!conn || conn.peer !== id) conn = peer.connect(id);
-            loadHistory();
+            activeId = id;
+            document.getElementById('contact-view').style.display = 'none';
+            document.getElementById('chat-view').style.display = 'flex';
+            document.getElementById('chat-with').innerText = name;
+            conn = peer.connect(id);
+            showLogs();
         }
 
-        function sendChat() {
-            const msg = document.getElementById('chat-msg').value;
-            if (!msg) return;
-            if (conn && conn.open) conn.send({type: 'text', content: msg});
-            saveAndShowMsg(activeFriendId, {type: 'text', content: msg}, 'me');
-            document.getElementById('chat-msg').value = '';
+        function sendText() {
+            const val = document.getElementById('msg-input').value;
+            if(!val) return;
+            if(conn) conn.send(val);
+            saveMsg(activeId, val, 'me');
+            document.getElementById('msg-input').value = '';
         }
 
-        async function toggleRecording() {
-            const btn = document.getElementById('voice-btn');
-            if (!mediaRecorder || mediaRecorder.state === "inactive") {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
-                audioChunks = [];
-                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-                mediaRecorder.onstop = () => {
-                    const blob = new Blob(audioChunks, { type: 'audio/ogg; codecs=opus' });
-                    const reader = new FileReader();
-                    reader.readAsDataURL(blob);
-                    reader.onloadend = () => {
-                        const base64data = reader.result;
-                        if (conn && conn.open) conn.send({type: 'voice', content: base64data});
-                        saveAndShowMsg(activeFriendId, {type: 'voice', content: base64data}, 'me');
-                    };
-                };
-                mediaRecorder.start();
-                btn.innerText = "🛑";
-            } else {
-                mediaRecorder.stop();
-                btn.innerText = "🎤";
-            }
+        function saveMsg(id, text, type) {
+            if(!chatLogs[id]) chatLogs[id] = [];
+            chatLogs[id].push({text, type});
+            localStorage.setItem('c_logs', JSON.stringify(chatLogs));
+            if(activeId === id) showLogs();
         }
 
-        function saveAndShowMsg(friendId, data, type) {
-            if (!chats[friendId]) chats[friendId] = [];
-            chats[friendId].push({ ...data, type, time: Date.now() });
-            localStorage.setItem('myChatHistory', JSON.stringify(chats));
-            if (activeFriendId === friendId) loadHistory();
-        }
-
-        function loadHistory() {
-            const win = document.getElementById('chat-window');
-            win.innerHTML = '';
-            (chats[activeFriendId] || []).forEach(m => {
-                if (m.type === 'text' || m.content?.type === 'text' || typeof m.content === 'string') {
-                    let text = typeof m.content === 'object' ? m.content.content : m.content;
-                    win.innerHTML += `<div class="msg ${m.type}">${text}</div>`;
-                } else {
-                    let src = typeof m.content === 'object' ? m.content.content : m.content;
-                    win.innerHTML += `<div class="msg ${m.type}"><audio controls src="${src}"></audio></div>`;
-                }
+        function showLogs() {
+            const history = document.getElementById('msg-history');
+            history.innerHTML = '';
+            (chatLogs[activeId] || []).forEach(m => {
+                history.innerHTML += `<div class="msg ${m.type}">${m.text}</div>`;
             });
-            win.scrollTop = win.scrollHeight;
+            history.scrollTop = history.scrollHeight;
         }
 
-        function makeCall() {
-            navigator.mediaDevices.getUserMedia({ audio: true }).then((s) => {
-                const call = peer.call(activeFriendId, s);
-                call.on('stream', (rs) => { const a = new Audio(); a.srcObject = rs; a.play(); });
+        function makeCall(id) {
+            activeId = id;
+            navigator.mediaDevices.getUserMedia({audio:true}).then(s => {
+                currentCall = peer.call(id, s);
+                document.getElementById('call-overlay').style.display = 'flex';
+                document.getElementById('call-status').innerText = "Calling...";
+                currentCall.on('stream', rs => { const a = new Audio(); a.srcObject = rs; a.play(); });
             });
         }
+
+        function answerCall() {
+            if(ringtone) ringtone.pause();
+            navigator.mediaDevices.getUserMedia({audio:true}).then(s => {
+                currentCall.answer(s);
+                document.getElementById('call-status').innerText = "On Call";
+                currentCall.on('stream', rs => { const a = new Audio(); a.srcObject = rs; a.play(); });
+            });
+        }
+
+        function endCall() {
+            if(ringtone) ringtone.pause();
+            if(currentCall) currentCall.close();
+            document.getElementById('call-overlay').style.display = 'none';
+        }
+
+        function closeChat() { document.getElementById('contact-view').style.display = 'block'; document.getElementById('chat-view').style.display = 'none'; }
 
         function addFriend() {
-            const n = prompt("Display Name:");
-            const i = prompt("Friend's ID:");
-            if (n && i) { friends.push({name: n, id: i.toLowerCase()}); localStorage.setItem('myFriends', JSON.stringify(friends)); renderFriends(); }
-        }
-
-        function deleteFriend(i, e) {
-            e.stopPropagation();
-            if(confirm("Delete contact and chat?")) {
-                friends.splice(i, 1);
-                localStorage.setItem('myFriends', JSON.stringify(friends));
+            const n = prompt("Name:"), i = prompt("ID:");
+            if(n && i) {
+                friends.push({name: n, id: i.toLowerCase()});
+                localStorage.setItem('f_list', JSON.stringify(friends));
                 renderFriends();
             }
         }
     </script>
 </body>
 </html>
+
