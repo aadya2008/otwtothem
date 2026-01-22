@@ -3,34 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connect | Private Space</title>
+    <title>Connect</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root { --bg: #fdfaf5; --accent: #6d7e6e; --dark: #2d2621; --white: #ffffff; --grey: #f9f9f9; --online: #8fbc8f; }
-        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); color: var(--dark); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { background: var(--white); width: 90%; max-width: 380px; padding: 30px; border-radius: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.03); text-align: center; min-height: 500px; display: flex; flex-direction: column; position: relative; }
-        h1 { font-size: 24px; font-weight: 700; margin-bottom: 20px; }
-        input { width: 100%; padding: 15px; margin-top: 5px; border-radius: 15px; border: 1.5px solid #eee; box-sizing: border-box; background: var(--grey); margin-bottom: 10px; }
-        .main-btn { width: 100%; padding: 16px; border-radius: 15px; border: none; background: var(--dark); color: white; font-weight: 600; cursor: pointer; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); color: var(--dark); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; overflow: hidden; }
+        .container { background: var(--white); width: 90%; max-width: 380px; padding: 25px; border-radius: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.03); min-height: 520px; display: flex; flex-direction: column; position: relative; z-index: 10; }
         
-        .contact-card { display: flex; align-items: center; justify-content: space-between; padding: 15px; background: var(--grey); border-radius: 20px; margin-bottom: 10px; position: relative; }
-        .status-dot { width: 10px; height: 10px; background: #ccc; border-radius: 50%; display: inline-block; margin-right: 8px; transition: 0.3s; }
+        /* Stealth Mode (Calculator) */
+        #calc-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #eee; z-index: 9999; padding: 40px 20px; font-family: monospace; color: #333; }
+        .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-width: 300px; margin: 20px auto; }
+        .calc-btn { background: #fff; border: 1px solid #ccc; padding: 20px; text-align: center; border-radius: 5px; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .status-dot { width: 10px; height: 10px; background: #ccc; border-radius: 50%; display: inline-block; margin-right: 8px; }
         .status-dot.online { background: var(--online); box-shadow: 0 0 8px var(--online); }
-        
-        .icon-btns { display: flex; gap: 8px; }
-        .icon-btn { background: white; border: 1px solid #eee; border-radius: 12px; padding: 8px; cursor: pointer; font-size: 16px; }
+        .contact-card { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--grey); border-radius: 20px; margin-bottom: 10px; }
         
         #chat-view { display: none; flex-direction: column; flex-grow: 1; }
-        #msg-history { flex-grow: 1; height: 280px; overflow-y: auto; background: var(--grey); border-radius: 15px; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+        #msg-history { flex-grow: 1; height: 300px; overflow-y: auto; background: var(--grey); border-radius: 15px; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
         .msg { padding: 10px 14px; border-radius: 15px; max-width: 80%; font-size: 14px; }
         .msg.me { background: var(--dark); color: white; align-self: flex-end; }
         .msg.them { background: #e8e3dc; color: var(--dark); align-self: flex-start; }
 
-        #call-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(45, 38, 33, 0.98); color: white; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
-        .ring-btn { width: 70px; height: 70px; border-radius: 50%; border: none; cursor: pointer; margin: 20px; font-size: 24px; }
+        input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #eee; background: var(--grey); margin-bottom: 10px; }
+        .main-btn { width: 100%; padding: 15px; border-radius: 12px; border: none; background: var(--dark); color: white; font-weight: 600; cursor: pointer; }
+        .stealth-trigger { position: absolute; bottom: 15px; left: 15px; font-size: 18px; cursor: pointer; opacity: 0.3; }
+
+        #call-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); color: white; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; }
+        .ring-btn { width: 60px; height: 60px; border-radius: 50%; border: none; margin: 20px; font-size: 20px; }
     </style>
 </head>
 <body>
+
+    <div id="calc-overlay" onclick="toggleStealth()">
+        <h2>Standard Calculator</h2>
+        <div style="background:#fff; padding:20px; text-align:right; font-size:30px; border:1px solid #ccc;">0</div>
+        <div class="calc-grid">
+            <div class="calc-btn">7</div><div class="calc-btn">8</div><div class="calc-btn">9</div><div class="calc-btn">/</div>
+            <div class="calc-btn">4</div><div class="calc-btn">5</div><div class="calc-btn">6</div><div class="calc-btn">*</div>
+            <div class="calc-btn">1</div><div class="calc-btn">2</div><div class="calc-btn">3</div><div class="calc-btn">-</div>
+            <div class="calc-btn">0</div><div class="calc-btn">.</div><div class="calc-btn">=</div><div class="calc-btn">+</div>
+        </div>
+        <p style="text-align:center; font-size:10px; color:#999;">Tap anywhere to return</p>
+    </div>
 
     <div id="auth-screen" class="container">
         <h1>Connect</h1>
@@ -41,24 +57,25 @@
 
     <div id="app-screen" class="container" style="display:none;">
         <div id="contact-view">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div class="header">
                 <h1>Space</h1>
-                <button onclick="addFriend()" style="background:none; border:none; font-size:28px; color:var(--accent);">+</button>
+                <button onclick="addFriend()" style="background:none; border:none; font-size:24px; color:var(--accent);">+</button>
             </div>
             <div id="contact-list"></div>
         </div>
 
         <div id="chat-view">
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
-                <button onclick="closeChat()" style="background:none; border:none; font-size:20px;">←</button>
+            <div class="header">
+                <button onclick="closeChat()" style="background:none; border:none; font-size:18px;">←</button>
                 <b id="chat-with">Name</b>
             </div>
             <div id="msg-history"></div>
             <div style="display:flex; gap:5px;">
                 <input type="text" id="msg-input" placeholder="Aa" style="margin:0;">
-                <button class="icon-btn" onclick="sendText()">Send</button>
+                <button onclick="sendText()" style="background:var(--dark); color:white; border:none; border-radius:10px; padding:0 15px;">↑</button>
             </div>
         </div>
+        <div class="stealth-trigger" onclick="toggleStealth()">👁️</div>
     </div>
 
     <div id="call-overlay">
@@ -70,17 +87,22 @@
     </div>
 
     <script>
-        let peer, conn, currentCall, ringtone, activeId;
+        let peer, conn, currentCall, activeId, ringtone;
         let friends = JSON.parse(localStorage.getItem('f_list') || '[]');
         let chatLogs = JSON.parse(localStorage.getItem('c_logs') || '{}');
         const ringSound = "https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3";
+
+        function toggleStealth() {
+            const calc = document.getElementById('calc-overlay');
+            calc.style.display = calc.style.display === 'block' ? 'none' : 'block';
+        }
 
         function handleAuth() {
             const id = document.getElementById('auth-id').value.trim().toLowerCase();
             const pass = document.getElementById('auth-pass').value.trim();
             const saved = localStorage.getItem('p_' + id);
-            if (!saved) { localStorage.setItem('p_' + id, pass); alert("Created!"); }
-            else if (saved !== pass) return alert("Wrong!");
+            if (!saved) { localStorage.setItem('p_' + id, pass); alert("Account Created"); }
+            else if (saved !== pass) return alert("Wrong");
             startApp(id);
         }
 
@@ -90,12 +112,12 @@
                 document.getElementById('auth-screen').style.display = 'none';
                 document.getElementById('app-screen').style.display = 'flex';
                 renderFriends();
-                setInterval(checkOnline, 5000); // Check status every 5 seconds
+                setInterval(checkOnline, 8000);
             });
             peer.on('connection', c => {
                 conn = c;
                 conn.on('data', data => {
-                    if(data === 'ping') { conn.send('pong'); return; }
+                    if (window.navigator.vibrate) window.navigator.vibrate(100);
                     saveMsg(conn.peer, data, 'them'); 
                 });
             });
@@ -109,14 +131,9 @@
 
         function checkOnline() {
             friends.forEach(f => {
-                const p = peer.connect(f.id, { metadata: "ping" });
-                p.on('open', () => {
-                    document.getElementById('dot-' + f.id).classList.add('online');
-                    p.close();
-                });
-                p.on('error', () => {
-                    document.getElementById('dot-' + f.id).classList.remove('online');
-                });
+                const p = peer.connect(f.id);
+                p.on('open', () => { document.getElementById('dot-'+f.id).classList.add('online'); p.close(); });
+                setTimeout(() => document.getElementById('dot-'+f.id).classList.remove('online'), 7000);
             });
         }
 
@@ -126,9 +143,9 @@
             friends.forEach(f => {
                 list.innerHTML += `<div class="contact-card">
                     <div><span id="dot-${f.id}" class="status-dot"></span><b>${f.name}</b></div>
-                    <div class="icon-btns">
-                        <button class="icon-btn" onclick="openChat('${f.id}','${f.name}')">💬</button>
-                        <button class="icon-btn" onclick="makeCall('${f.id}')">📞</button>
+                    <div style="display:flex; gap:10px;">
+                        <button onclick="openChat('${f.id}','${f.name}')" style="background:none; border:none; font-size:18px;">💬</button>
+                        <button onclick="makeCall('${f.id}')" style="background:none; border:none; font-size:18px;">📞</button>
                     </div>
                 </div>`;
             });
@@ -181,7 +198,7 @@
             if(ringtone) ringtone.pause();
             navigator.mediaDevices.getUserMedia({audio:true}).then(s => {
                 currentCall.answer(s);
-                document.getElementById('call-status').innerText = "On Call";
+                document.getElementById('call-status').innerText = "Connected";
                 currentCall.on('stream', rs => { const a = new Audio(); a.srcObject = rs; a.play(); });
             });
         }
@@ -205,4 +222,3 @@
     </script>
 </body>
 </html>
-
